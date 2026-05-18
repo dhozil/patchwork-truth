@@ -1339,6 +1339,15 @@ app.post("/api/contract/write", async (req, res) => {
   }
 });
 
+// ── Admin ────────────────────────────────────────────────────────────────────
+
+// Reset in-memory leaderboard
+app.post("/admin/reset-leaderboard", (req, res) => {
+  globalLeaderboard.clear();
+  console.log("[Admin] Leaderboard reset. All entries cleared.");
+  res.json({ status: "ok", message: "Leaderboard has been reset" });
+});
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
