@@ -5,8 +5,7 @@
   "description": "Patchwork Truth — GenLayer community narrative game",
   "scripts": {
     "dev": "node --env-file=.env.secrets --watch src/server.js",
-    "start": "node src/index.js",
-    "start:api": "node src/server.js",
+    "start": "node src/server.js",
     "deploy": "genlayer deploy contracts/PatchworkTruth.py",
     "test:contracts": "gltest",
     "bundle:wallet": "node scripts/bundle-genlayer.js"

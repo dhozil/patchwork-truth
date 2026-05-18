@@ -16,14 +16,18 @@ const { getScenarios, getScenario, getFragmentsForScenario, getShuffledFragments
 const contractService = require("./contractService");
 const ENABLE_CONTRACT = process.env.ENABLE_CONTRACT === "true";
 
+// Root directory for static files (works both locally and on Vercel)
+const ROOT_DIR = path.resolve(__dirname, "..");
+const PUBLIC_DIR = path.join(ROOT_DIR, "public");
+
 const app = express();
 app.use(express.json());
 app.use(cors());
-app.use(express.static(path.join(__dirname, "..", "public")));
+app.use(express.static(PUBLIC_DIR));
 
 // Root route → serve index.html as the main page
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
+  res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
 
 const rooms = new Map();
