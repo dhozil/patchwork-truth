@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Patchwork Truth — GenLayer Community Game</title>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./styles.css" />
+<script src="./genlayer-js.js"></script>
+<script src="./wallet.js"></script>
+</head>
+<body>
+
+<div id="showcase">
+  <!-- Confetti canvas -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Celebration overlay -->
+  <!-- Disconnect / Room expired overlay -->
+  <div id="disconnectOverlay" class="disconnect-overlay hidden">
+    <div class="dicon">&#9888;</div>
+    <h2 id="disconnectTitle">Connection Lost</h2>
+    <p id="disconnectMsg">The room no longer exists or you have been disconnected.</p>
+    <button class="btn btn-ok btn-full" id="disconnectBackBtn" style="max-width:280px;">&#8592; Back to Menu</button>
+  </div>
+
+  <div id="celebrationOverlay" class="celebration hidden">
+    <div class="celebration-title" id="celebrationTitle">Results</div>
+    <div class="celebration-sub" id="celebrationSub"></div>
+    <div class="share-btns">
+      <button class="share-btn" id="copyLinkBtn">&#128203; Copy Results</button>
+      <button class="share-btn" id="copyBadgeBtn">&#127941; Copy Badge</button>
+      <button class="share-btn" id="closeCelebrationBtn">Close</button>
+    </div>
+  </div>
+
+  <!-- Name Input Modal (for new wallet players) -->
+  <div id="nameModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-icon">&#128100;</div>
+      <h2>Choose Your Display Name</h2>
+      <p>This name will be stored on-chain and visible to all players in leaderboards.</p>
+      <input type="text" id="nameInput" class="modal-input" placeholder="Enter name (2-24 chars)" minlength="2" maxlength="24" />
+      <div class="modal-hint">Name must be 2-24 characters</div>
+      <button class="btn btn-ok btn-full" id="saveNameBtn">&#10004; Save Name & Continue</button>
+    </div>
+  </div>
+  <!-- Background -->
+  <div class="bg-canvas">
+    <div class="bg-shape bg-shape-1"></div>
+    <div class="bg-shape bg-shape-2"></div>
+    <div class="bg-shape bg-shape-3"></div>
+  </div>
+  <div class="bg-grid"></div>
+  <div class="scanline"></div>
+
+  <!-- ==================== MAIN MENU ==================== -->
+  <div id="menuScreen" class="screen active">
+    <!-- Wallet connect button (top right) -->
+    <div style="position:absolute;top:20px;right:20px;z-index:100;">
+      <span id="walletName" style="display:none;margin-right:12px;color:var(--cyan);font-weight:700;font-size:14px;vertical-align:middle;"></span>
+      <button class="btn" id="walletConnectBtn" style="font-size:14px;padding:10px 20px;width:130px;">Connect</button>
+    </div>
+    <div class="menu-content">
+      <div class="intro-badge" style="animation:none;">GenLayer Community Mini-Game</div>
+      <div class="menu-logo">Patchwork Truth</div>
+      <div class="menu-subtitle">// Build truth together — Collaborative Narrative Game</div>
+      <div class="menu-cards">
+        <div class="menu-card quick" id="menuQuickBtn">
+          <span class="menu-card-icon">&#9889;</span>
+          <h3>Quick Play</h3>
+          <p>Jump into a quick game with default settings. Solo or multiplayer.</p>
+          <span class="tag">&#9889; Speed Mode</span>
+        </div>
+        <div class="menu-card advanced" id="menuAdvancedBtn">
+          <span class="menu-card-icon">&#9881;</span>
+          <h3>Advanced</h3>
+          <p>Full customization: difficulty, team size, challenge rules, host controls.</p>
+          <span class="tag">&#128081; Host Mode</span>
+        </div>
+        <div class="menu-card guide" id="menuGuideBtn">
+          <span class="menu-card-icon">&#128214;</span>
+          <h3>Guide</h3>
+          <p>Learn how to play, game phases, negotiation strategy, and scoring tips.</p>
+          <span class="tag">&#128165; Read First</span>
+        </div>
+        <div class="menu-card leaderboard" id="menuLeaderboardBtn">
+          <span class="menu-card-icon">&#127941;</span>
+          <h3>Leaderboard</h3>
+          <p>Top scores from the GenLayer community. Can you make it to the top?</p>
+          <span class="tag">&#128293; Live</span>
+        </div>
+      </div>
+      <div class="menu-footer">
+        <span>v1.0</span>
+        <span>GenLayer</span>
+        <span>8 themes</span>
+        <span class="v">16 frags/scenario</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== LEADERBOARD SCREEN ==================== -->
+  <div id="leaderboardScreen" class="screen">
+    <div class="lb-header">
+      <button class="guide-back" id="lbBackBtn">&#8592; Back</button>
+      <div class="lb-title">&#127941; Global Leaderboard <span class="lb-live-badge"><span class="lb-live-dot"></span>Live</span></div>
+      <div class="lb-subtitle">Top scores from the GenLayer community — updated in real-time</div>
+    </div>
+    <div class="lb-tabs">
+      <button class="lb-tab active" id="lbTabScore">&#128200; Score</button>
+      <button class="lb-tab" id="lbTabXp">&#9733; XP</button>
+    </div>
+    <div class="lb-body" id="lbBody">
+      <div class="lb-loading">
+        <div class="spinner"></div>
+        <p>Loading leaderboard...</p>
+      </div>
+    </div>
+    <div class="lb-player-rank" id="lbPlayerRank" style="display:none;">
+      <div class="lb-pr-label">Your Best Score</div>
+      <div class="lb-pr-score" id="lbPrScore">--</div>
+      <div class="lb-pr-rank" id="lbPrRank">Rank #--</div>
+    </div>
+    <button class="btn btn-ok btn-full" id="lbPlayBtn">&#9654; Play to Climb</button>
+  </div>
+
+  <!-- ==================== ADVANCED SETUP ==================== -->
+  <div id="advancedSetupScreen" class="screen">
+    <div class="adv-header">
+      <button class="guide-back" id="advBackBtn">&#8592; Back</button>
+      <div class="adv-title">Advanced Setup</div>
+    </div>
+
+    <div class="adv-form">
+      <!-- Host name + room name -->
+      <div class="adv-row">
+        <div class="adv-field">
+          <label>Host Name</label>
+          <input id="advHostName" type="text" placeholder="Your name..." value="Host" />
+        </div>
+        <div class="adv-field">
+          <label>Room Code (optional)</label>
+          <input id="advRoomCode" type="text" placeholder="Custom code or leave blank" />
+        </div>
+      </div>
+
+      <!-- Scenario selector -->
+      <div class="adv-field">
+        <label>Scenario Theme</label>
+        <div class="scenario-row" id="advScenarioRow"></div>
+      </div>
+
+      <!-- Difficulty -->
+      <div class="adv-field">
+        <label>Difficulty</label>
+        <div class="adv-diff-grid" id="diffGrid">
+          <button class="adv-diff-btn active" data-diff="easy">&#128127; Easy</button>
+          <button class="adv-diff-btn" data-diff="normal">&#128127; Normal</button>
+          <button class="adv-diff-btn" data-diff="hard">&#9889; Hard</button>
+        </div>
+      </div>
+
+      <!-- Toggles -->
+      <div class="adv-field">
+        <label>Game Rules</label>
+        <div style="display:grid; gap:8px;">
+          <label class="adv-toggle">
+            <input type="checkbox" id="advSpeedMode" checked />
+            <span class="adv-toggle-track"></span>
+            <div>
+              <div class="adv-toggle-text">Speed Mode</div>
+              <div class="adv-toggle-desc">Fast timer + auto-advance phases</div>
+            </div>
+          </label>
+          <label class="adv-toggle">
+            <input type="checkbox" id="advChallengeEnabled" checked />
+            <span class="adv-toggle-track"></span>
+            <div>
+              <div class="adv-toggle-text">Challenge Phase</div>
+              <div class="adv-toggle-desc">Enable Optimistic Democracy challenge phase</div>
+            </div>
+          </label>
+          <label class="adv-toggle">
+            <input type="checkbox" id="advTeamMode" />
+            <span class="adv-toggle-track"></span>
+            <div>
+              <div class="adv-toggle-text">Team Mode</div>
+              <div class="adv-toggle-desc">2 teams competing for the best narrative</div>
+            </div>
+          </label>
+          <label class="adv-toggle">
+            <input type="checkbox" id="advShowFragments" checked />
+            <span class="adv-toggle-track"></span>
+            <div>
+              <div class="adv-toggle-text">Show Fragments</div>
+              <div class="adv-toggle-desc">Show story fragments to players</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Players & Duration -->
+      <div class="adv-row">
+        <div class="adv-field">
+          <label>Min Players</label>
+          <input id="advMinPlayers" type="number" min="1" max="20" value="2" />
+        </div>
+        <div class="adv-field">
+          <label>Game Duration (min)</label>
+          <input id="advDuration" type="number" min="3" max="15" value="8" />
+        </div>
+      </div>
+
+      <button class="adv-start-btn" id="advStartBtn">&#9654; Start Advanced Match</button>
+    </div>
+  </div>
+
+  <!-- ==================== GUIDE / TUTORIAL ==================== -->
+  <div id="guideScreen" class="screen">
+    <div class="guide-header">
+      <button class="guide-back" id="guideBackBtn">&#8592; Back to Menu</button>
+      <div class="guide-title">How to Play</div>
+    </div>
+
+    <div class="guide-tabs" id="guideTabs">
+      <button class="guide-tab active" data-tab="overview">Overview</button>
+      <button class="guide-tab" data-tab="phases">Game Phases</button>
+      <button class="guide-tab" data-tab="contribution">Contribution</button>
+      <button class="guide-tab" data-tab="scoring">Scoring</button>
+      <button class="guide-tab" data-tab="strategy">Strategy</button>
+    </div>
+
+    <div class="guide-content" id="guideContent">
+      <!-- OVERVIEW -->
+      <div class="guide-section active" id="sec-overview">
+        <h2><span class="icon">&#128169;</span> What is Patchwork Truth?</h2>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:14px; line-height:1.7;">
+          Patchwork Truth is a multiplayer negotiation game where you compete to build a shared truth from conflicting story fragments. Goal: weave the most coherent and fair narrative using GenLayer Intelligent Contract scoring.
+        </p>
+        <div class="guide-tip">This game is not about who knows the most — it is about who can build the most coherent narrative from conflicting evidence.</div>
+        <h2 style="margin-top:16px;"><span class="icon">&#127919;</span> How It Works</h2>
+        <div class="guide-step">
+          <div class="guide-step-num">1</div>
+          <div class="guide-step-body">
+            <h4>Host Creates the Room</h4>
+            <p>Host creates a room, picks a scenario, and shares the room code with other players.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">2</div>
+          <div class="guide-step-body">
+            <h4>Each Player Gets Different Fragments</h4>
+            <p>16 fragments shuffled — each player gets 3 random fragments. No player has the full picture — negotiation is REQUIRED.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">3</div>
+          <div class="guide-step-body">
+            <h4>Discuss and Craft the Final Narrative</h4>
+            <p>Negotiation phase: everyone submits contributions. Host weaves the best final narrative.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">4</div>
+          <div class="guide-step-body">
+            <h4>AI Evaluator Grades the Narrative</h4>
+            <p>GenLayer Intelligent Contract evaluates 4 dimensions: coherence, evidence integration, argument quality, manipulation resistance.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">5</div>
+          <div class="guide-step-body">
+            <h4>Challenge Phase (Optional)</h4>
+            <p>Disagree with the AI evaluation? Submit an appeal via Optimistic Democracy — community voting.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHASES -->
+      <div class="guide-section" id="sec-phases">
+        <h2><span class="icon">&#9201;</span> Game Flow (7 Phases)</h2>
+        <div class="guide-phase-flow">
+          <div class="guide-phase-node">Lobby</div>
+          <span class="guide-phase-arrow">&#8594;</span>
+          <div class="guide-phase-node">Distribution</div>
+          <span class="guide-phase-arrow">&#8594;</span>
+          <div class="guide-phase-node">Negotiation</div>
+          <span class="guide-phase-arrow">&#8594;</span>
+          <div class="guide-phase-node">Drafting</div>
+          <span class="guide-phase-arrow">&#8594;</span>
+          <div class="guide-phase-node">AI Evaluation</div>
+          <span class="guide-phase-arrow">&#8594;</span>
+          <div class="guide-phase-node">Challenge</div>
+          <span class="guide-phase-arrow">&#8594;</span>
+          <div class="guide-phase-node">Results</div>
+        </div>
+        <div class="guide-accordion">
+          <button class="guide-accordion-btn" onclick="toggleAccordion(this)">
+            Lobby <span style="color:var(--muted);font-size:11px;">Room setup</span>
+          </button>
+          <div class="guide-accordion-body">Host creates a room, picks a scenario, and invites players. Speed mode enabled = countdown timer starts.</div>
+        </div>
+        <div class="guide-accordion">
+          <button class="guide-accordion-btn" onclick="toggleAccordion(this)">
+            Fragment Distribution <span style="color:var(--muted);font-size:11px;">~45s-90s</span>
+          </button>
+          <div class="guide-accordion-body">Each player receives 3 random fragments from the 16-fragment scenario pool. Read and understand before the next phase.</div>
+        </div>
+        <div class="guide-accordion">
+          <button class="guide-accordion-btn" onclick="toggleAccordion(this)">
+            Negotiation <span style="color:var(--muted);font-size:11px;">~90s-180s</span>
+          </button>
+          <div class="guide-accordion-body">Discuss in the chat room. Players submit contributions: claim + evidence + narrative impact. All contributions are scored.</div>
+        </div>
+        <div class="guide-accordion">
+          <button class="guide-accordion-btn" onclick="toggleAccordion(this)">
+            Drafting / Final Narrative <span style="color:var(--muted);font-size:11px;">~45s-120s</span>
+          </button>
+          <div class="guide-accordion-body">Host crafts the best single final narrative from all contributions. Can edit freely but must include the strongest evidence.</div>
+        </div>
+        <div class="guide-accordion">
+          <button class="guide-accordion-btn" onclick="toggleAccordion(this)">
+            AI Evaluation <span style="color:var(--muted);font-size:11px;">~20s-60s</span>
+          </button>
+          <div class="guide-accordion-body">GenLayer Intelligent Contract evaluates the final narrative. Score 0-25 per dimension, total 0-100.</div>
+        </div>
+        <div class="guide-accordion">
+          <button class="guide-accordion-btn" onclick="toggleAccordion(this)">
+            Challenge <span style="color:var(--muted);font-size:11px;">Optional</span>
+          </button>
+          <div class="guide-accordion-body">Players can appeal. Small XP stake. Community votes. Correct challenge = bonus, failed = penalty.</div>
+        </div>
+        <div class="guide-accordion">
+          <button class="guide-accordion-btn" onclick="toggleAccordion(this)">
+            Results <span style="color:var(--muted);font-size:11px;">Done!</span>
+          </button>
+          <div class="guide-accordion-body">Final leaderboard with score breakdown. XP distribution. Celebration + share results.</div>
+        </div>
+      </div>
+
+      <!-- CONTRIBUTION -->
+      <div class="guide-section" id="sec-contribution">
+        <h2><span class="icon">&#128221;</span> How to Write a Contribution</h2>
+        <div class="guide-tip">Good contribution = specific claim + concrete evidence + narrative impact. Not an opinion without basis.</div>
+        <h2 style="margin-top:16px;"><span class="icon">&#9986;</span> Contribution Formula</h2>
+        <div class="guide-example">
+          <div class="guide-example-label">Format</div>
+          <div class="guide-example-text">[MAIN CLAIM] because [EVIDENCE] — [NARRATIVE IMPACT]</div>
+        </div>
+        <div class="guide-example">
+          <div class="guide-example-label">Example: Mystery Scenario</div>
+          <div class="guide-example-text">"The 19:07 sensor log is the most verifiable timeline anchor because digital data is more reliable than eyewitness testimony."</div>
+        </div>
+        <div class="guide-example">
+          <div class="guide-example-label">Example: Corporate Scenario</div>
+          <div class="guide-example-text">"Singapore entity registered 14 Feb — 2 weeks BEFORE the board meeting — indicating advance planning, not opportunity."</div>
+        </div>
+        <h2 style="margin-top:16px;"><span class="icon">&#9888;</span> What to Avoid</h2>
+        <div style="display:grid; gap:6px; margin-top:8px;">
+          <div style="font-size:12px; color:var(--muted);">&#10060; Opinion without evidence: "In my opinion this incident is clearly not an accident"</div>
+          <div style="font-size:12px; color:var(--muted);">&#10060; Absolutism: "This MUST be sabotage because X"</div>
+          <div style="font-size:12px; color:var(--muted);">&#10060; Ignoring conflicting evidence: "ignore the anonymous report"</div>
+          <div style="font-size:12px; color:var(--muted);">&#10060; Chat volume without substance: spamming without specific claims</div>
+        </div>
+        <h2 style="margin-top:16px;"><span class="icon">&#128203;</span> Final Narrative Tips</h2>
+        <div class="guide-example">
+          <div class="guide-example-label">Template</div>
+          <div class="guide-example-text">"Based on evidence X and Y, the most coherent narrative is [THEIRS]. However there is uncertainty in [AREA] that needs to be acknowledged."</div>
+        </div>
+      </div>
+
+      <!-- SCORING -->
+      <div class="guide-section" id="sec-scoring">
+        <h2><span class="icon">&#128200;</span> Scoring System</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+          <div style="background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.2);border-radius:12px;padding:14px;">
+            <div style="font-size:20px;font-weight:800;color:var(--cyan);">Coherence</div>
+            <div style="font-size:11px;color:var(--muted);">How logically consistent the final narrative is</div>
+          </div>
+          <div style="background:rgba(255,0,128,0.07);border:1px solid rgba(255,0,128,0.2);border-radius:12px;padding:14px;">
+            <div style="font-size:20px;font-weight:800;color:var(--magenta);">Evidence</div>
+            <div style="font-size:11px;color:var(--muted);">How much valid evidence was successfully integrated</div>
+          </div>
+          <div style="background:rgba(255,230,0,0.07);border:1px solid rgba(255,230,0,0.2);border-radius:12px;padding:14px;">
+            <div style="font-size:20px;font-weight:800;color:var(--yellow);">Argument</div>
+            <div style="font-size:11px;color:var(--muted);">Quality of reasoning in the narrative</div>
+          </div>
+          <div style="background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.2);border-radius:12px;padding:14px;">
+            <div style="font-size:20px;font-weight:800;color:var(--green);">Manip. Resist</div>
+            <div style="font-size:11px;color:var(--muted);">Resistance to biased manipulation</div>
+          </div>
+        </div>
+        <h2 style="margin-top:16px;"><span class="icon">&#127941;</span> Player Score Breakdown</h2>
+        <div class="guide-step">
+          <div class="guide-step-num">+</div>
+          <div class="guide-step-body">
+            <h4>Accepted Contributions</h4>
+            <p>+10 pts per contribution that made it into the final narrative</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">+</div>
+          <div class="guide-step-body">
+            <h4>Accurate Challenges</h4>
+            <p>+15 pts per correct challenge (AI/majority agree)</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">&#8212;</div>
+          <div class="guide-step-body">
+            <h4>Failed Challenges</h4>
+            <p>&#8212;5 pts per failed challenge — prevents challenge spam</p>
+          </div>
+        </div>
+        <div class="guide-tip">Challenge is not about weakening others — it is about improving the shared consensus.</div>
+      </div>
+
+      <!-- STRATEGY -->
+      <div class="guide-section" id="sec-strategy">
+        <h2><span class="icon">&#128640;</span> Tips and Strategy</h2>
+        <div class="guide-step">
+          <div class="guide-step-num">1</div>
+          <div class="guide-step-body">
+            <h4>Listen to Everyone</h4>
+            <p>Your fragments are only 3 of 16. Other players have the evidence you need to form a complete narrative.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">2</div>
+          <div class="guide-step-body">
+            <h4>Focus on Being the Integrator</h4>
+            <p>High scorers are not the loudest talkers — they are the best evidence integrators.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">3</div>
+          <div class="guide-step-body">
+            <h4>Use Evidence Language</h4>
+            <p>Key words: "based on", "supported by", "consistent with", "unlike". Avoid: "in my opinion", "it seems".</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">4</div>
+          <div class="guide-step-body">
+            <h4>Acknowledging Uncertainty = Strength Signal</h4>
+            <p>Narratives that acknowledge evidence limitations are valued higher by the AI than baseless absolute claims.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">5</div>
+          <div class="guide-step-body">
+            <h4>Strategic Challenging</h4>
+            <p>Challenge is not for attacking — it is for highlighting what matters. Correct challenge = big bonus.</p>
+          </div>
+        </div>
+        <div class="guide-tip">Replayability: try different scenarios. Each scenario needs a different approach since the evidence types differ.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== INTRO SCREEN (Quick Play) ==================== -->
+  <div id="introScreen" class="screen">
+    <div class="intro-top-bar">
+      <button class="btn-demo" id="introBackBtn">&#8592; Back to Menu</button>
+    </div>
+    <div class="intro-content">
+      <div class="intro-badge">GenLayer Community Mini-Game</div>
+      <h1 class="intro-title">Patchwork Truth</h1>
+      <p class="intro-tagline">Weave truth together from conflicting story fragments.<br>Who can build the most coherent and fair narrative?</p>
+
+      <div class="feature-grid">
+        <div class="feat-card">
+          <span class="feat-icon">&#128269;</span>
+          <div class="feat-title">Collect Evidence</div>
+          <div class="feat-desc">Each player gets different fragments.</div>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">&#129309;</span>
+          <div class="feat-title">Negotiate</div>
+          <div class="feat-desc">Discuss and weave the final narrative.</div>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">&#9881;</span>
+          <div class="feat-title">AI Evaluator</div>
+          <div class="feat-desc">Intelligent Contract grades coherence.</div>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">&#128293;</span>
+          <div class="feat-title">Challenge</div>
+          <div class="feat-desc">Optimistic Democracy — appeal decisions.</div>
+        </div>
+      </div>
+
+      <div class="scenario-row" id="scenarioRow"></div>
+
+      <div class="intro-actions">
+        <div class="mode-row">
+          <label class="mode-toggle">
+            <input type="checkbox" id="speedModeToggle" />
+            <span class="toggle-track"></span>
+            <span class="mode-label">Speed Mode</span>
+          </label>
+          <span class="mode-desc">&#9889; Auto-advance + fast timer 3-5 min</span>
+        </div>
+        <button class="btn-start" id="playBtn">Start Game</button>
+        <div class="join-row">
+          <div class="join-divider"><span>or join a room</span></div>
+          <input class="name-input" id="joinRoomCodeInput" type="text" placeholder="Room Code (e.g. AB3XZY)" maxlength="6" style="text-transform:uppercase;letter-spacing:2px;text-align:center;" />
+          <button class="btn btn-demo-run btn-full" id="joinRoomBtn">&#128101; Join Room</button>
+        </div>
+        <button class="btn-demo" id="showGuideBtn">&#128214; Read Game Guide</button>
+      </div>
+
+      <div class="intro-genlayer">Solo &amp; Multiplayer</div>
+    </div>
+  </div>
+
+  <!-- ==================== GAME SCREEN ==================== -->
+  <div id="gameScreen" class="screen">
+    <div class="g-topbar">
+      <div class="g-logo">Patchwork Truth</div>
+      <div class="g-meta">
+        <span class="chip chip-cyan" id="scenarioChip" style="display:none;"></span>
+        <span class="chip chip-cyan" id="phaseTag">phase: --</span>
+        <span class="chip chip-mag" id="modeTag"></span>
+        <span class="chip chip-green" id="speedTag"></span>
+        <span class="chip chip-yellow" id="roomBadge"></span>
+        <span class="chip" id="soundTag">
+          <button class="sound-toggle" id="soundToggle" title="Toggle sound">
+            <svg id="soundOnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <svg id="soundOffIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+          </button>
+        </span>
+        <button class="btn-reset" id="resetBtn">&#8592; New Room</button>
+        <span class="chip chip-mag" id="hostBadge" style="display:none;">&#128081; Host</span>
+      </div>
+    </div>
+
+    <div class="phase-track" id="phaseTrack"></div>
+
+    <div class="g-grid">
+      <!-- LEFT: Actions -->
+      <div class="g-panel flex-fill" style="overflow-y:auto;" id="leftPanel">
+
+        <!-- Host Control Bar -->
+        <div id="hostControlBar" class="host-control-bar hidden">
+          <div class="hc-label">&#128081; Host Controls</div>
+          <button class="hc-btn" id="hcAdvanceBtn">&#9654; Next Phase</button>
+          <button class="hc-btn" id="hcFinalizeBtn">&#10004; Finalize</button>
+          <button class="hc-btn" id="hcChallengeBtn">Close Challenge</button>
+        </div>
+
+        <!-- Lobby / Waiting -->
+        <div id="lobbyPanel" style="display:none;">
+          <div class="action-box">
+            <div class="action-box-title">&#127918; Room Ready!</div>
+            <div class="action-box-desc">Share the room code with friends, or start a solo game now.</div>
+            <div id="roomCodeDisplay" style="font-size:48px;font-weight:900;color:var(--cyan);text-align:center;padding:20px 32px;background:rgba(0,229,255,0.1);border:2px solid rgba(0,229,255,0.3);border-radius:16px;letter-spacing:6px;margin-bottom:8px;user-select:text;cursor:text;" onclick="copyRoomCode()" title="Click to copy">---</div>
+            <button class="btn" id="copyRoomCodeBtn" onclick="copyRoomCode()" style="margin-bottom:16px;font-size:15px;">&#128203; Copy Room Code</button>
+            <div id="playerCountDisplay" style="font-size:17px;color:var(--muted);text-align:center;margin-bottom:12px;">Waiting for players...</div>
+            <div id="playerListDisplayLobby" style="font-size:16px;color:var(--muted);text-align:center;margin-bottom:18px;"></div>
+            <button class="btn btn-ok btn-full" id="startMatchBtn">&#9654; Start Game Now</button>
+            <button class="btn btn-demo-run btn-full" id="inviteBtn" style="margin-top:8px;">&#128279; Copy Room Link</button>
+            <button class="btn btn-warn btn-full" id="destroyRoomBtn" style="margin-top:12px;display:none;">&#128465; Destroy Room</button>
+            <button class="btn btn-full" id="leaveRoomBtn" style="margin-top:8px;display:none;background:rgba(255,80,80,0.15);border:1px solid rgba(255,80,80,0.4);color:#ff8080;">&#8592; Leave Room</button>
+          </div>
+        </div>
+
+        <!-- Fragments -->
+        <div id="fragPanel" style="display:none;">
+          <div class="ready-banner" style="display:none;font-size:14px;background:rgba(255,204,0,0.12);border:1px solid #ffcc00;color:#ffcc00;text-align:center;padding:8px 12px;border-radius:6px;margin-bottom:12px;">
+            <span class="ready-banner-text"></span>
+            <button class="btn ready-btn" style="margin-left:12px;background:#ffcc00;color:#111;font-weight:700;padding:4px 14px;border-radius:4px;border:none;cursor:pointer;">&#10004; READY</button>
+          </div>
+          <div class="action-box">
+            <div class="action-box-title">&#128269; Your Story Fragments</div>
+            <div class="action-box-desc">Use these fragments to write your contribution:</div>
+            <div class="frag-grid" id="fragGrid"></div>
+          </div>
+          <button class="btn btn-full btn-ok" id="fragNextBtn">Next to Contribution &#8594;</button>
+        </div><!-- Contribution -->
+        <div id="contribPanel" style="display:none;">
+          <div class="ready-banner" style="display:none;font-size:14px;background:rgba(255,204,0,0.12);border:1px solid #ffcc00;color:#ffcc00;text-align:center;padding:8px 12px;border-radius:6px;margin-bottom:12px;">
+            <span class="ready-banner-text"></span>
+            <button class="btn ready-btn" style="margin-left:12px;background:#ffcc00;color:#111;font-weight:700;padding:4px 14px;border-radius:4px;border:none;cursor:pointer;">&#10004; READY</button>
+          </div>
+          <div class="action-box">
+            <div class="action-box-title">1. Write Your Contribution</div>
+            <div class="action-box-desc">Make a claim based on your evidence. 1-2 sentences: claim + evidence + narrative impact.</div>
+            <textarea id="contribTxt" placeholder="Example: The signal spike at 19:07 is strong evidence that the incident started before the camera blackout."></textarea>
+            <div class="helper">Format: claim + evidence + narrative impact</div>
+            <div class="btn-row">
+              <select id="acceptedSel">
+                <option value="true">&#10004; Accepted</option>
+                <option value="false">&#10006; Rejected</option>
+              </select>
+              <button class="btn" id="submitContribBtn">Submit Contribution</button>
+            </div>
+          </div>
+          <div class="ex-fill" style="grid-template-columns:1fr 1fr;">
+            <button class="btn" id="fillContribBtn">&#128221; Fill Example Contribution</button>
+            <button class="btn btn-ok" id="fillNarrBtn">&#9998; Fill Example Narrative</button>
+          </div>
+        </div>
+
+        <!-- Finalize -->
+        <div id="finalizePanel" style="display:none;">
+          <div class="action-box">
+            <div class="action-box-title">2. Write the Final Narrative</div>
+            <div class="action-box-desc">Summarize the strongest evidence into 1-2 sentences. Acknowledge uncertain parts — avoid absolute claims.</div>
+            <textarea id="finalTxt" placeholder="Example: The incident likely occurred during the sensor anomaly and signal spike, but the camera blackout adds uncertainty."></textarea>
+            <div class="helper">Format: summarize + strong evidence + acknowledge uncertainty</div>
+            <button class="btn btn-ok btn-full" id="finalizeBtn">&#10004; Finalize Narrative</button>
+          </div>
+        </div>
+
+        <!-- Challenge -->
+        <div id="challengePanel" style="display:none;">
+          <div class="action-box">
+            <div class="action-box-title">3. Submit a Challenge (Optional)</div>
+            <div class="action-box-desc">Disagree with the AI evaluation? Submit an appeal with a strong reason.</div>
+            <textarea id="challengeTxt" placeholder="Example: The evaluation over-emphasized manipulationResistance even though the signal spike evidence was very strong."></textarea>
+            <div class="helper">Optional &mdash; can be left empty</div>
+            <div class="btn-row">
+              <select id="correctSel">
+                <option value="true">&#10004; Correct Challenge</option>
+                <option value="false">&#10006; Incorrect Challenge</option>
+              </select>
+              <button class="btn btn-warn" id="submitChallengeBtn">Submit Challenge</button>
+            </div>
+            <div class="btn-row" style="margin-top:12px;">
+              <button class="btn btn-ok btn-full" id="goToResultBtn">&#127941; Show Result</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsPanel" style="display:none;">
+          <div class="g-panel-title">&#127941; Final Results</div>
+          <div class="score-box">
+            <div class="score-num" id="scoreNum" data-val="--">--</div>
+            <div class="score-label">Narrative Score</div>
+            <div class="ai-badge" id="aiConsensusBadge" style="display:none;font-size:11px;margin-top:4px;color:var(--cyan);">&#x2699; AI Consensus (on-chain)</div>
+          </div>
+          <div class="rubric-grid" id="rubricGrid"></div>
+          <button class="btn btn-scenario btn-full" id="nextPhaseBtn" style="display:none;">&#8594; Next Phase: Challenge Window</button>
+          <div id="waitingHostMsg" style="text-align:center;color:var(--muted);font-size:15px;display:none;">Waiting for host to advance...</div>
+          <!-- Leaderboard table (shown in results phase) -->
+          <div id="resultsLeaderboard" style="display:none;margin-top:16px;">
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px;">&#128202; Leaderboard</div>
+            <table class="lb-table">
+              <thead><tr><th>#</th><th>Player</th><th>Score</th><th>XP</th></tr></thead>
+              <tbody id="lbBody2"></tbody>
+            </table>
+          </div>
+          <button class="btn btn-back-menu btn-full" id="playAgainBtn" style="display:none;margin-top:12px;">&#8592; Back to Menu</button>
+        </div>
+
+        <!-- Leaderboard -->
+        <div id="leaderboardPanel" style="display:none;">
+          <div class="g-panel-title">&#128202; Leaderboard</div>
+          <table class="lb-table">
+            <thead><tr><th>#</th><th>Player</th><th>Score</th><th>XP</th></tr></thead>
+            <tbody id="lbBody"></tbody>
+          </table>
+          <div style="margin-top:12px;">
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">Why This Score?</div>
+            <div class="bd-list" id="bdList"></div>
+          </div>
+          <button class="btn btn-back-menu btn-full" id="playAgainBtn" style="margin-top:10px;">&#8592; Back to Menu</button>
+        </div>
+
+        <!-- Demo Run -->
+        <div id="demoRunPanel" style="display:none;">
+          <button class="btn btn-demo-run btn-full" id="runDemoBtn">&#9654; Run Full Demo (1 Click)</button>
+        </div>
+      </div>
+
+      <!-- RIGHT: Players in room -->
+      <div class="g-panel right-panel">
+        <div class="g-panel-title">&#128736; Players</div>
+        <div class="player-list" id="playerListInRoom">
+          <div style="font-size:14px;color:var(--muted);">Waiting...</div>
+        </div>
+        <div class="timer-display" id="timerDisplay" style="display:none;">--:--</div>
+        <div class="submit-progress" id="submitProgress" style="display:none;">
+          <span id="submitProgressText" style="font-size:14px;">0/0</span>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="progressBarFill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="./sounds.js"></script>
+<script src="./examples.js"></script>
+<script src="./main.js"></script>
+</body>
+</html>
+
+        <!-- Demo Run -->

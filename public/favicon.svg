@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="100%" stop-color="#ff0080"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="6" fill="#06060f"/>
+  <!-- Puzzle piece / patchwork icon -->
+  <path d="M10 4 L22 4 L22 9 Q19 9 19 12 Q19 15 16 15 Q13 15 13 18 Q13 21 16 21 Q19 21 19 24 Q19 27 22 27 L22 28 L10 28 L10 23 Q7 23 7 20 Q7 17 10 17 Q13 17 13 14 Q13 11 10 11 Q7 11 7 8 Q7 5 10 5 Z" fill="none" stroke="url(#g)" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Truth dot in center -->
+  <circle cx="16" cy="16" r="2.5" fill="url(#g)"/>
+</svg>

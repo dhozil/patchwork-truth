@@ -1,0 +1,23 @@
+{
+  "name": "patchwork-truth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Patchwork Truth — GenLayer community narrative game",
+  "scripts": {
+    "dev": "node --env-file=.env.secrets --watch src/server.js",
+    "start": "node src/index.js",
+    "start:api": "node src/server.js",
+    "deploy": "genlayer deploy contracts/PatchworkTruth.py",
+    "test:contracts": "gltest",
+    "bundle:wallet": "node scripts/bundle-genlayer.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "viem": "^2.29.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "genlayer": "^0.39.1"
+  }
+}
