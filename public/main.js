@@ -2,7 +2,7 @@
 // Patchwork Truth — Showcase Mode UI (main.js)
 // ============================================================
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = "";  // Use relative URLs (works both locally and on Vercel)
 
 // ── Global click sound ───────────────────────────────────────
 document.addEventListener("click", (e) => {
@@ -2482,7 +2482,7 @@ $("lbTabXp") && $("lbTabXp").addEventListener("click", (e) => {
 let lbLoading = false;
 let lbPollingInterval = null;
 
-async function loadGlobalLeaderboard(filter = "all") {
+async function loadGlobalLeaderboard(filter = "score") {
   const body = $("lbBody");
   if (!body) return;
   if (lbLoading) return;
